@@ -1,19 +1,18 @@
 import { Request, Response } from 'express';
 import { CreateUserDto } from '../dtos/CreateUser.dto';
-import { UserResponse } from '../types/response';
-import { PrismaClient } from '@prisma/client';
-import { createUser, getUser, getUsers } from '../services/users';
-
-const prisma = new PrismaClient();
+import { LogoutResponse, UserResponse } from '../types/Response';
+import { createUser, getUser, getUsers, login, logout } from '../services/users';
+import { LoginUserRequest } from '../types/LoginUserRequest';
 
 export async function fetchUsers(request: Request, response: Response) {
+  console.log('here here');
   const users = await getUsers();
-  response.send(users);
+  response.status(200).send(users);
 }
 
-export async function getUserById(request: Request<{}, {}, {}, { id: string }>, response: Response<UserResponse>) {
-  const user = await getUser(response, request.query.id);
-  response.send(user);
+export async function getUserById(request: Request<{id: string}>, response: Response<UserResponse>) {
+  const user = await getUser(response, request.params.id);
+  response.status(200).send(user);
 }
 
 export async function registerUser (request: Request<{}, {}, CreateUserDto>, response: Response<UserResponse>) {
@@ -21,25 +20,14 @@ export async function registerUser (request: Request<{}, {}, CreateUserDto>, res
   response.status(201).send(user);
 };
 
-// export async function authUser (req, res) => {
-//   const { email, password } = req.body;
+export async function authUser (request: Request<{}, {}, LoginUserRequest>, response: Response<UserResponse>) {
+  console.log('auth body: ', request.body);
+  const user = await login(response, request.body);
+  console.log('userr: ', user);
+  response.status(200).send(user);
+};
 
-//   const user = await User.findUnique({
-//     where: {
-//       email,
-//     },
-//   });
-
-//   if (user && (await bcryptCompare(password, user.passwordDigest))) {
-//     generateToken(res, user.id);
-
-//     res.json({
-//       id: user.id,
-//       name: user.name,
-//       email: user.email,
-//     });
-//   } else {
-//     res.status(401);
-//     throw new Error('Invalid email or password');
-//   }
-// };
+export async function logoutUser (request: Request, response: Response<LogoutResponse>) {
+  logout(response);
+  response.status(200).send({ message: 'Logged out successfully' });
+};

@@ -1,8 +1,9 @@
 import { Response } from "express";
 import { CreateUserDto } from "../dtos/CreateUser.dto";
-import { create, getUserByEmail, getUserById, findUsers } from "../repositories/users";
-import { generateToken } from "../utils/auth-utils";
-import { UserResponse } from "../types/response";
+import { create, getUserByEmail, getUserById, findUsers } from "../repository/users";
+import { bcryptCompare, encrypt, generateToken } from "../utils/auth-utils";
+import { UserResponse } from "../types/Response";
+import { LoginUserRequest } from "../types/LoginUserRequest";
 
 export async function getUsers(): Promise<UserResponse[]> {
 	const users = await findUsers();
@@ -32,6 +33,33 @@ export async function getUser(response: Response<UserResponse>, id: string): Pro
 	};
 }
 
+export function logout(response: Response) {
+  response.cookie('jwt', '', {
+    httpOnly: true,
+    expires: new Date(0),
+  });
+}
+
+export async function login(response: Response, data: LoginUserRequest) {
+  console.log('data: ', data);
+  const userExists = await getUserByEmail(data.email);
+  console.log('userExists: ', userExists);
+
+  if (userExists && (await bcryptCompare(data.password, userExists.passwordDigest))) {
+    generateToken(response, userExists.id);
+
+    return {
+      id: userExists.id,
+      name: userExists.name || '',
+      email: userExists.email,
+      balance: userExists.balance,
+    };
+  } else {
+    response.status(401);
+    throw new Error('Invalid email or password');
+  }
+}
+
 export async function createUser(response: Response<UserResponse>, data: CreateUserDto): Promise<UserResponse> {
 	const userExists = await getUserByEmail(data.email);
 
@@ -40,10 +68,11 @@ export async function createUser(response: Response<UserResponse>, data: CreateU
 		throw new Error('User already exists');
 	}
 
+  const hash = await encrypt(data.password);
 	const newUser = await create({
 		name: data.name,
 		email: data.email,
-		passwordDigest: data.password,
+		passwordDigest: hash,
 		balance: 100,
 	});
 
