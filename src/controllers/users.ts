@@ -5,7 +5,6 @@ import { createUser, getUser, getUsers, login, logout } from '../services/users'
 import { LoginUserRequest } from '../types/LoginUserRequest';
 
 export async function fetchUsers(request: Request, response: Response) {
-  console.log('here here');
   const users = await getUsers();
   response.status(200).send(users);
 }
