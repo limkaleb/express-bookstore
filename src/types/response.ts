@@ -1,5 +1,6 @@
-export interface User {
+export interface UserResponse {
   id: number;
   email: string;
-  username: string;
+  name: string;
+  balance: number;
 }

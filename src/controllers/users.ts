@@ -1,19 +1,45 @@
 import { Request, Response } from 'express';
 import { CreateUserDto } from '../dtos/CreateUser.dto';
-import { User } from '../types/response';
+import { UserResponse } from '../types/response';
+import { PrismaClient } from '@prisma/client';
+import { createUser, getUser, getUsers } from '../services/users';
 
-export function getUsers(request: Request, response: Response) {
-  response.send([]);
+const prisma = new PrismaClient();
+
+export async function fetchUsers(request: Request, response: Response) {
+  const users = await getUsers();
+  response.send(users);
 }
 
-export function getUserById(request: Request, response: Response) {
-  response.send({});
+export async function getUserById(request: Request<{}, {}, {}, { id: string }>, response: Response<UserResponse>) {
+  const user = await getUser(response, request.query.id);
+  response.send(user);
 }
 
-export function createUser(request: Request<{}, {}, CreateUserDto>, response: Response<User>) {
-  response.status(201).send({
-    id: 1,
-    username: 'test',
-    email: '',
-  })
-}
+export async function registerUser (request: Request<{}, {}, CreateUserDto>, response: Response<UserResponse>) {
+  const user = await createUser(response, request.body);
+  response.status(201).send(user);
+};
+
+// export async function authUser (req, res) => {
+//   const { email, password } = req.body;
+
+//   const user = await User.findUnique({
+//     where: {
+//       email,
+//     },
+//   });
+
+//   if (user && (await bcryptCompare(password, user.passwordDigest))) {
+//     generateToken(res, user.id);
+
+//     res.json({
+//       id: user.id,
+//       name: user.name,
+//       email: user.email,
+//     });
+//   } else {
+//     res.status(401);
+//     throw new Error('Invalid email or password');
+//   }
+// };
